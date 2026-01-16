@@ -149,9 +149,16 @@ func DoAndUnwrap[T any](req *http.Request) (*T, error) {
 // the final response status code is not expected, or the response body cannot be unmarshalled into T.
 func DoAndUnwrapWithOptions[T any](req *http.Request, opts *Options) (*T, error) {
 	var t T
+
+	rv := reflect.ValueOf(t)
+	if rv.Kind() == reflect.Pointer {
+		return nil, fmt.Errorf("T must be a non pointer object. retrieved T type: %T", t)
+	}
+
 	if err := New().DoAndUnwrapWithOptions(req, &t, opts); err != nil {
 		return nil, err
 	}
+
 	return &t, nil
 }
 

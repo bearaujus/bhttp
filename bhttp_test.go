@@ -645,6 +645,13 @@ func TestPackage_DoAndUnwrapWithOptions(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("unwarp with invalid generic type", func(t *testing.T) {
+		_, err := bhttp.DoAndUnwrapWithOptions[*Resp](&http.Request{}, nil)
+		if err == nil {
+			t.Fatalf("expected error, got nil")
+		}
+	})
 }
 
 func TestMethod_DoAndUnwrap(t *testing.T) {
