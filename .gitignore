@@ -1,0 +1,9 @@
+# Integrated Development Environment (IDE)
+**/.idea
+**/.vscode
+
+# Operating System (OS)
+**/.DS_Store
+
+# Development Folders & Resources
+dev
