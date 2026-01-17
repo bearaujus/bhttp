@@ -135,7 +135,7 @@ func DoWithOptions(req *http.Request, opts *Options) error {
 //
 // Returns a pointer to the decoded value, or an error if the request fails, the response status
 // code is not expected, or the response body cannot be unmarshalled into T.
-func DoAndUnwrap[T any](req *http.Request) (*T, error) {
+func DoAndUnwrap[T any](req *http.Request) (T, error) {
 	return DoAndUnwrapWithOptions[T](req, nil)
 }
 
@@ -147,19 +147,14 @@ func DoAndUnwrap[T any](req *http.Request) (*T, error) {
 //
 // Returns a pointer to the decoded value, or an error if the request fails, retries are exhausted,
 // the final response status code is not expected, or the response body cannot be unmarshalled into T.
-func DoAndUnwrapWithOptions[T any](req *http.Request, opts *Options) (*T, error) {
+func DoAndUnwrapWithOptions[T any](req *http.Request, opts *Options) (T, error) {
 	var t T
 
-	rv := reflect.ValueOf(t)
-	if rv.Kind() == reflect.Pointer {
-		return nil, fmt.Errorf("T must be a non pointer object. retrieved T type: %T", t)
-	}
-
 	if err := New().DoAndUnwrapWithOptions(req, &t, opts); err != nil {
-		return nil, err
+		return t, err
 	}
 
-	return &t, nil
+	return t, nil
 }
 
 func (c *bHTTP) Client() *http.Client {

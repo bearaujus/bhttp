@@ -547,7 +547,7 @@ func TestPackage_DoAndUnwrap(t *testing.T) {
 
 			req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
 
-			out, err := bhttp.DoAndUnwrap[Resp](req)
+			out, err := bhttp.DoAndUnwrap[*Resp](req)
 
 			if tt.wantErr && err == nil {
 				t.Fatalf("expected error, got nil")
@@ -620,7 +620,7 @@ func TestPackage_DoAndUnwrapWithOptions(t *testing.T) {
 
 			req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
 
-			out, err := bhttp.DoAndUnwrapWithOptions[Resp](req, tt.opts)
+			out, err := bhttp.DoAndUnwrapWithOptions[*Resp](req, tt.opts)
 
 			if tt.wantErr && err == nil {
 				t.Fatalf("expected error, got nil")
@@ -646,10 +646,59 @@ func TestPackage_DoAndUnwrapWithOptions(t *testing.T) {
 		})
 	}
 
-	t.Run("unwarp with invalid generic type", func(t *testing.T) {
-		_, err := bhttp.DoAndUnwrapWithOptions[*Resp](&http.Request{}, nil)
-		if err == nil {
-			t.Fatalf("expected error, got nil")
+	t.Run("test type", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"message": "hello"}`))
+		}))
+		t.Cleanup(srv.Close)
+
+		req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
+
+		// test *struct
+		respPtr, err := bhttp.DoAndUnwrapWithOptions[*Resp](req, nil)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %v", err)
+		}
+		respPtrT := reflect.TypeOf(respPtr)
+		expectedRespPtr := reflect.TypeOf(&Resp{})
+		if respPtrT.String() != expectedRespPtr.String() {
+			t.Fatalf("respPtr = %v, want %v", respPtrT, expectedRespPtr)
+		}
+		if respPtr.Message != "hello" {
+			t.Fatalf("respPtr.Message = %q, want %q", respPtr.Message, "hello")
+		}
+
+		// test struct
+		respStruct, err := bhttp.DoAndUnwrapWithOptions[Resp](req, nil)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %v", err)
+		}
+		respStructT := reflect.TypeOf(respStruct)
+		expectedStructResp := reflect.TypeOf(Resp{})
+		if respStructT.String() != expectedStructResp.String() {
+			t.Fatalf("resp = %v, want %v", respStructT, expectedStructResp)
+		}
+		if respStruct.Message != "hello" {
+			t.Fatalf("respStruct.Message = %q, want %q", respStruct.Message, "hello")
+		}
+
+		// test map[string]any
+		respMap, err := bhttp.DoAndUnwrapWithOptions[map[string]any](req, nil)
+		if err != nil {
+			t.Fatalf("expected nil error, got: %v", err)
+		}
+		respMapT := reflect.TypeOf(respMap)
+		expectedMapResp := reflect.TypeOf(map[string]any{})
+		if respMapT.String() != expectedMapResp.String() {
+			t.Fatalf("resp = %v, want %v", respMapT, expectedMapResp)
+		}
+		msg, ok := respMap["message"]
+		if !ok {
+			t.Fatalf("resp['message'] not found")
+		}
+		if msg != "hello" {
+			t.Fatalf("respMap.Message = %q, want %q", msg, "hello")
 		}
 	})
 }
